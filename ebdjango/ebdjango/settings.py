@@ -15,15 +15,21 @@ import dlib
 from attributes.align import Aligner
 from tensorflow import keras
 import tensorflow as tf
+
+env = os.environ.get
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 print(BASE_DIR)
 
 PREDICTOR_PATH = os.path.join(BASE_DIR, 'attributes/shape_predictor_68_face_landmarks.dat')
 DETECTOR = dlib.get_frontal_face_detector()
-ALIGNER = Aligner(face_detector=DETECTOR, output_path=os.path.join(BASE_DIR, 'static/ebdjango/'), predictor_path=PREDICTOR_PATH, save=True)
+PREDICTOR = dlib.shape_predictor(PREDICTOR_PATH)
+ALIGNER = Aligner(face_detector=DETECTOR, output_path=os.path.join(BASE_DIR, 'static/attributes/'), predictor_path=PREDICTOR_PATH, save=True, padding=0.3)
 
-
+AWS_ACCESS_KEY = "AKIAI3RBVMWZ2E3IV3CA"
+AWS_SECRET_KEY = env("AWS_SECRET_KEY")
+AWS_S3_REGION_NAME = "us-west-1"
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
@@ -34,7 +40,7 @@ SECRET_KEY = 'yp@@@2%$c@tgs1o&fxt-f9up@$k5#z61qfk!-gjh4%o%r_edgd'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['django-dev-6.ig8atj9cgt.us-west-1.elasticbeanstalk.com', '127.0.0.1', '192.168.19.19']
+ALLOWED_HOSTS = ['fifth-4.pgmjmfryvp.us-west-1.elasticbeanstalk.com', '127.0.0.1', '192.168.19.19']
 
 
 # Application definition
@@ -68,7 +74,7 @@ ROOT_URLCONF = 'ebdjango.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates'), ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

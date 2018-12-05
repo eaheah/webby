@@ -20,7 +20,8 @@ class NoFaceException(Exception):
     pass
 
 class Aligner:
-    def __init__(self, face_detector, output_path, predictor_path, save=False):
+    def __init__(self, face_detector, output_path, predictor_path, save=False, padding=None):
+        self.padding = padding
         self.face_detector = face_detector
         self.save = save
         self.output_path = output_path
@@ -57,23 +58,51 @@ class Aligner:
         # aligned_image = cv2.cvtColor(aligned_image, cv2.COLOR_BGR2RGB)
 
         boxes = self.face_detector(gray_image, 1)
-        if len(boxes) == 1:
-            box_args = self.get_bbox(boxes[0])
 
-            aligned_image = self.bound(aligned_image, box_args)
-            print(aligned_image.shape)
+        if boxes:
+            if not len(boxes) == 1:
+                box = self.get_largest_bbox()
+            else:
+                box = boxes[0]
+            box_args = self.get_bbox(box)
+            try:
+                if self.padding is None:
+                    aligned_image = self.bound(aligned_image, box_args)
+                else:
+                    faces = dlib.full_object_detections()
+                    for detection in boxes:
+                        try:
+                            faces.append(self.predictor(aligned_image, detection))
+                        except RuntimeError as e:
+                            aligned_image = cv2.cvtColor(aligned_image, cv2.COLOR_RGBA2RGB)
+                            faces.append(self.predictor(aligned_image, detection))
 
-            cv2.imwrite(filename, aligned_image)
-
-            aligned_image = cv2.cvtColor(aligned_image, cv2.COLOR_BGR2RGB)
-            if aligned_image.shape[-1] == 4:
-                aligned_image = cv2.cvtColor(aligned_image, cv2.COLOR_RGBA2RGB)
-            print(aligned_image.shape)
-            return aligned_image
-
-
+                    aligned_image = dlib.get_face_chip(aligned_image, faces[0], self.bbox_shape, self.padding)
+                return aligned_image
+            except Exception as e:
+                print(e)
+                raise NoFaceException('No Face / Multiple Faces Detected')
         else:
+            print("ELSE")
             raise NoFaceException('No Face / Multiple Faces Detected')
+
+        # if len(boxes) == 1:
+        #     box_args = self.get_bbox(boxes[0])
+
+        #     aligned_image = self.bound(aligned_image, box_args)
+        #     print(aligned_image.shape)
+
+        #     cv2.imwrite(filename, aligned_image)
+
+        #     aligned_image = cv2.cvtColor(aligned_image, cv2.COLOR_BGR2RGB)
+        #     if aligned_image.shape[-1] == 4:
+        #         aligned_image = cv2.cvtColor(aligned_image, cv2.COLOR_RGBA2RGB)
+        #     print(aligned_image.shape)
+        #     return aligned_image
+
+
+        # else:
+        #     raise NoFaceException('No Face / Multiple Faces Detected')
 
     def get_coordinates(self, prediction):
         coordinates = np.zeros((prediction.num_parts, 2), dtype="int")
